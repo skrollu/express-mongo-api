@@ -1,0 +1,23 @@
+{
+  "name": "starwarsbackend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test",
+    "devStart": "nodemon server.js"
+  },
+  "author": "Mathieu Ibersien",
+  "license": "MIT",
+  "dependencies": {
+    "apollo": "^2.31.1",
+    "apollo-server": "^2.19.0",
+    "apollo-server-express": "^2.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "graphql": "^15.4.0",
+    "graphql-upload": "^11.0.0",
+    "mongoose": "^5.10.17",
+    "morgan": "^1.10.0"
+  }
+}

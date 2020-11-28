@@ -1,0 +1,54 @@
+scalar Date
+
+type Award {
+  nominations: Int
+  text: String
+  wins: Int
+}
+
+type Imdb {
+  id: String
+  rating: Float
+  votes: Int
+}
+
+type Tomato {
+  consensus: String
+  fresh: Int
+  image: String
+  meter: Int
+  rating: Float
+  reviews: Int
+  userMeter: Int
+  userRating: Float
+  userReviews: Int
+}
+
+type Movie {
+  _id: ID!
+  actors: [String!]
+  awards: Award
+  countries: [String!]
+  director: String!
+  genres: [String!]
+  imdb: Imdb
+  metacritic: String
+  plot: String!
+  poster: String!
+  rated: String!
+  runtime: Int!
+  title: String!
+  tomato: Tomato
+  type: String!
+  writers: [String!]
+  year: Int!
+  youtubeEmbedUrl: String
+}
+
+type Query {
+  movies: [Movie!]!
+  movieById(id: ID!): Movie!
+}
+
+#type Mutation { }
+  
