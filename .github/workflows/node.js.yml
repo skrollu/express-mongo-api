@@ -24,7 +24,7 @@ jobs:
       uses: actions/setup-node@v1
       env:
         NODE: "test"
-        DATABASE_URL_TEST: ${{ secrets.MONGO_DB_MY_API_URL_TEST }}
+        MONGO_DB_MY_API_URL_TEST: ${{ secrets.MONGO_DB_MY_API_URL_TEST }}
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
