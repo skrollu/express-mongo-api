@@ -8,7 +8,7 @@ if(process.env.NODE_ENV === 'development') {
 } else if(process.env.NODE_ENV === 'production') {
   DATABASE_URL = process.env.DATABASE_URL_READ_ONLY;
 } else if (process.env.NODE_ENV === 'test') {
-  DATABASE_URL = process.env.DATABASE_URL_TEST;
+  DATABASE_URL = process.env.MONGO_DB_MY_API_URL_TEST;
 } else {
   DATABASE_URL = process.env.DATABASE_URL_READ_ONLY;
 }
