@@ -4,12 +4,15 @@ let DATABASE_URL;
 
 
 if(process.env.NODE_ENV === 'development') {
-   DATABASE_URL = process.env.DATABASE_URL_CLUSTER_ADMIN;
+  DATABASE_URL = process.env.DATABASE_URL_CLUSTER_ADMIN;
+} else if(process.env.NODE_ENV === 'production') {
+  DATABASE_URL = process.env.DATABASE_URL_READ_ONLY;
+} else if (process.env.NODE_ENV === 'test') {
+  DATABASE_URL = process.env.DATABASE_URL_TEST;
 } else {
-   DATABASE_URL = process.env.DATABASE_URL_TEST;
+  DATABASE_URL = process.env.DATABASE_URL_READ_ONLY;
 }
 
-console.log("DB : ", DATABASE_URL)
 const connectDb = () => {
   return mongoose.connect(DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true }, err => {
     if (err) {

@@ -1,26 +1,31 @@
 var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
+
+function canBeRequired(value) {
+    if(value != undefined && value != null && !value.isEmpty())  {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 var MovieSchema = new Schema({
-    _id: {
-        type: mongoose.ObjectId,
-        required: true
-    },
     actors: {
         type: [String],
     },
     awards: {
         nominations: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.awards),
         }, 
         text: {
             type: String,
-            required: true,
+            required: canBeRequired(this.awards),
         },
         wins: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.awards),
         },
     },
     countries: {
@@ -36,15 +41,15 @@ var MovieSchema = new Schema({
     imdb: {
         id: {
             type: String,
-            required: true,
+            required: canBeRequired(this.imdb),
         },
         rating: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.imdb),
         },
         votes: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.imdb),
         },
     },
     metacritic: {
@@ -71,41 +76,42 @@ var MovieSchema = new Schema({
         required: true,
     },
     tomato: {
-       consensus: {
+        required: false,
+        consensus: {
             type: String,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         fresh: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         image: {
             type: String,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         meter: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         rating: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         reviews: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         userMeter: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         userRating: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
         userReviews: {
             type: Number,
-            required: true,
+            required: canBeRequired(this.tomato),
         },
     },
     type: {

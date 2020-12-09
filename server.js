@@ -3,17 +3,82 @@ const fs = require('fs');
 const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
 //const utils = require('./utils')
-const dotenv = require('dotenv').config()
+const dotenv = require('dotenv').config();
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const cors = require('cors'); 
 
 //Setup Express Server
 const app = express();
 app.use(express.static('public'));
 app.use(logger('dev'));
 
+app.use(cors());
+app.use(bodyParser.json());
+app.use(cookieParser());
+app.use(require('express-session')({
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized: false
+}));
+ 
 //------------------------------------------------------------------DATABASE CONNECTION
 
 const dbConnection = require("./database/database")
 dbConnection();
+
+//------------------------------------------------------------------PASSPORT SETTINGS
+
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+app.use(passport.initialize());
+app.use(passport.session());
+
+// passport config
+const { Account } = require('./database/models/account');
+passport.use(new LocalStrategy(Account.authenticate()));
+passport.serializeUser(Account.serializeUser());
+passport.deserializeUser(Account.deserializeUser());
+
+//------------------------------------------------------------------EXPRESS ROUTER SETTINGS
+
+const moviesRoutes = require('./routes/movies');
+const usersRoutes = require('./routes/users');
+
+app.use("/api/movies", moviesRoutes);
+app.use("/api/users", usersRoutes);
+
+// catch 404 and forward to error handler
+
+/*  Graphql  request and throw Errors
+app.use(function(req, res, next) {
+    var err = new Error('Not Found');
+    err.status = 404;
+    next(err);
+});
+ */
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+    app.use(function(err, req, res, next) {
+        res.status(err.status || 500);
+        res.json({ 
+          message: err.message,
+          error: err 
+        })
+    });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('error', {
+        message: err.message,
+        error: {}
+    });
+});
 
 //------------------------------------------------------------------GRAPHQL SETTINGS
 
@@ -45,8 +110,61 @@ server.applyMiddleware({ app, path: '/graphql' });
 
 const port = process.env.PORT || 4000;
 
-app.listen({ port: port }, () =>
-  console.log(`🚀 Server ready at http://localhost:${port}${server.graphqlPath}`)
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+app.on('error', onError);
+//app.on('listening', onListening);
+
+app.listen({ port: port }, () => {
+    console.log(`🚀 GraphQL server ready at http://localhost:${port}${server.graphqlPath}`)
+    console.log(`🚀 REST API server ready at http://localhost:${port}`)
+  }
 );
+
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+ /*
+var debug = require('debug')('passport-local-express4:server');
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+*/
 
 module.exports = { app } // to test better practice surely exist
