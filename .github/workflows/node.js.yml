@@ -22,11 +22,19 @@ jobs:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: echo $MONGO_DB_MY_API_URL_TEST
       env:
         NODE: "test"
         MONGO_DB_MY_API_URL_TEST: ${{ secrets.MONGO_DB_MY_API_URL_TEST }}
-      with:
-        node-version: ${{ matrix.node-version }}
+    - run: echo $NODE
+      env:
+        NODE: "test"
+        MONGO_DB_MY_API_URL_TEST: ${{ secrets.MONGO_DB_MY_API_URL_TEST }}
     - run: npm ci
     - run: npm run build --if-present
     - run: npm run test
+      env:
+        NODE: "test"
+        MONGO_DB_MY_API_URL_TEST: ${{ secrets.MONGO_DB_MY_API_URL_TEST }}
