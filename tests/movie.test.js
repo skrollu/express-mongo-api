@@ -30,13 +30,13 @@ const adminAccountToCreate = {
 }
 
 describe('REST API test suites', () => {
-
+    
     beforeAll( async (done) => {
         await Movie.deleteMany({});
         await Account.deleteMany({});
         done();
     })
-
+    
     afterAll( async (done) => {
         await Account.deleteMany({})
         await Movie.deleteMany({});
@@ -46,6 +46,11 @@ describe('REST API test suites', () => {
     
     describe('REST API: Register account test suite', () => {   
         
+        afterAll( async (done) => {
+            await Account.deleteMany({})
+            await Movie.deleteMany({});
+            done();
+        });
         
         it('post(/api/users/register): Register a new account', async (done) => {
             await session(express).post('/api/users/register')
@@ -73,6 +78,30 @@ describe('REST API test suites', () => {
     
     describe('REST API: Login and logged Account routes test suite', () => {
         
+        
+        beforeAll( async (done) => {
+            await Account.deleteMany({});
+            await Movie.deleteMany({});
+            done();
+        })
+        
+        afterAll( async (done) => {
+            await Account.deleteMany({})
+            await Movie.deleteMany({});
+            done();
+        });
+             
+        it('post(/api/users/register): Register a new account', async (done) => {
+            await session(express).post('/api/users/register')
+            .set('Accept', 'application/json')
+            .send(adminAccountToCreate)
+            .expect((res) => {
+                expect(res.body.message).toBeDefined();
+                expect(res.body.registered).toBeTruthy();
+                done()
+            })
+        })
+                        
         it('post(/api/users/login): Login with the account previously created', async (done) => {
             await testSession.post('/api/users/login')
             .set('Accept', 'application/json')
@@ -88,7 +117,7 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('delete(/api/users/delete): delete previously created account', async (done) => {
+        it('delete(/api/users/delete): delete previously created account and logout', async (done) => {
             await testSession.delete('/api/users/delete')
             .set('Accept', 'application/json')
             //.set('Cookie', cookie)
@@ -96,6 +125,38 @@ describe('REST API test suites', () => {
                 expect(res.body.deleted).toBeTruthy();
                 expect(res.body.user).toBeDefined();
                 expect(res.body.user._id).toBeDefined();
+                done()
+            })
+        })
+        
+        it('get(/api/users/logout): Logout previously logged in account should get error because already logged out when deleting account', async (done) => {
+            await testSession.get('/api/users/logout')
+            .expect(401)
+            .then((res) => {
+                expect(res.body.logged).toBeDefined();
+                expect(res.body.logged).toBeFalsy();
+                expect(res.body.error).toMatch(/ERROR/);
+                done()
+            })
+        })
+        
+        it('post(/api/users/register): Register a new account', async (done) => {
+            await session(app).post('/api/users/register')
+            .set('Accept', 'application/json')
+            .send(adminAccountToCreate)
+            .expect((res) => {
+                expect(res.body.message).toBeDefined();
+                expect(res.body.registered).toBeTruthy();
+                done()
+            })
+        })
+        
+        it('post(/api/users/login): Login with the previously created account', async (done) => {
+            await testSession.post('/api/users/login')
+            .set('Accept', 'application/json')
+            .send(adminAccount)
+            .expect(200)
+            .then((res) => {
                 done()
             })
         })
@@ -128,8 +189,8 @@ describe('REST API test suites', () => {
         var id;
         
         afterAll( async (done) => {
-            Account.deleteMany({})
-            Movie.deleteMany({});
+            await Account.deleteMany({})
+            await Movie.deleteMany({});
             done()
         })
         
@@ -242,7 +303,7 @@ describe('REST API test suites', () => {
             await testSession.put(`/api/movies/update/${id}`)
             .set('Accept', 'application/json')
             .expect('Content-Type', /json/)
-            .expect(200)
+            .expect(400)
             .then((res, err) => {
                 expect(res.body.updated).toBeFalsy();
                 expect(res.body.error).toMatch(/ERROR/);
@@ -272,16 +333,5 @@ describe('REST API test suites', () => {
                 done()
             })
         })
-        
-        it('get(/api/users/logout): Logout previously logged in account', async (done) => {
-            await testSession.get('/api/users/logout')
-            .expect(200)
-            .then((res) => {
-                expect(res.body.message).toEqual("Successfully logged out !");
-                expect(res.body.logged).toBeFalsy();
-                done()
-            })
-        })
     });
-    
 });

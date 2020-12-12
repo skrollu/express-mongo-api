@@ -91,7 +91,7 @@ router.post("/login", function (req, res, next) {
 * @Access PUBLIC
 * @Request GET
 */
-router.get("/logout", function (req, res) {
+router.get("/logout", isAuthenticated, function (req, res) {
     req.logout();
     res.json({
         logged: false,
