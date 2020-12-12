@@ -3,6 +3,7 @@ const models = require("../database/models");
 const router = express.Router();
 const { Movie } = require('../database/models/movie')
 const mongoose = require('mongoose');
+const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 
 /**
 * @Route /api/movies
@@ -51,7 +52,7 @@ router.get("/:id", function (req, res) {
 * @Access PRIVATE
 * @Request POST
 */
-router.post("/add", /* isSuperUser, upload.array('adPictures'),  */function (req, res) {
+router.post("/add", isAdmin, /* upload.array('adPictures'),  */function (req, res) {
   /* 
   const filenames = [];
   req.files.map(file => filenames.push(file.filename))
@@ -132,7 +133,7 @@ router.post("/add", /* isSuperUser, upload.array('adPictures'),  */function (req
 * @Access PRIVATE
 * @Request DELETE
 */
-router.delete("/delete/:id",/*  isSuperUser,  */function (req, res) {
+router.delete("/delete/:id", isAdmin, function (req, res) {
   let id = req.params.id;
   
   if (mongoose.Types.ObjectId.isValid(id)) {
@@ -168,7 +169,7 @@ router.delete("/delete/:id",/*  isSuperUser,  */function (req, res) {
 * @access PRIVATE
 * @request PUT
 */
-router.put("/update/:id", /*isSuperUser,  upload.array('adPictures'),*/ function (req, res) {
+router.put("/update/:id", isAdmin, function (req, res) {
   const id = req.params.id;
   const data = req.body;
 

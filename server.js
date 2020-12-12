@@ -24,11 +24,23 @@ app.use(require('express-session')({
  
 //------------------------------------------------------------------DATABASE CONNECTION
 
-const dbConnection = require("./database/database")
-dbConnection();
+const { connectDb } = require("./database/database")
+connectDb();
 
 //------------------------------------------------------------------PASSPORT SETTINGS
+/**
+ * By default, LocalStrategy expects to find credentials in parameters named username and password. If your site prefers to name these fields differently, options are available to change the defaults.
 
+passport.use(new LocalStrategy({
+    usernameField: 'email',
+    passwordField: 'passwd'
+  },
+  function(username, password, done) { //ici cette focntion est remplacée par notre utilisation de account et de passport-mongoose
+    // ...
+  }
+));
+
+ */
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 app.use(passport.initialize());
@@ -106,9 +118,7 @@ const server = new ApolloServer({
 });
 server.applyMiddleware({ app, path: '/graphql' });
 
-//-------------------------------------------------------------------Launch Express Server
-
-const port = process.env.PORT || 4000;
+//-------------------------------------------------------------------Express Server Settings
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -116,11 +126,7 @@ const port = process.env.PORT || 4000;
 app.on('error', onError);
 //app.on('listening', onListening);
 
-app.listen({ port: port }, () => {
-    console.log(`🚀 GraphQL server ready at http://localhost:${port}${server.graphqlPath}`)
-    console.log(`🚀 REST API server ready at http://localhost:${port}`)
-  }
-);
+
 
 
 /**
@@ -167,4 +173,6 @@ function onListening() {
 
 */
 
-module.exports = { app } // to test better practice surely exist
+
+
+module.exports = { app, server } // to test better practice surely exist
