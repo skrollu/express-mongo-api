@@ -19,7 +19,7 @@ router.get("/", function (req, res) {
         error: "Error while searching for all movies " + err
       });
     } else {
-      console.log(movies)
+      
       res.json({
         user: req.user,
         movies
