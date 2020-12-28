@@ -1,6 +1,7 @@
 const dotenv = require('dotenv').config();
 process.env.NODE_ENV = 'test' //to be in the test database environnement
 process.env.PORT = 3000;
+process.env.ADMIN_EMAIL = "test@mail.fr"
 
 const session = require('supertest-session');
 const { app, server } = require('../server');

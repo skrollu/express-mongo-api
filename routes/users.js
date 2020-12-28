@@ -30,9 +30,7 @@ async function(req, res, next) {
         } else {
             
             const account = new Account(req.body);
-            console.log(account)
             await account.save();
-            
             
             /**
             * Account created, a mail is sent.
@@ -140,8 +138,7 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
 * @Request POST
 */
 router.post("/login", function (req, res, next) {
-    console.log(req.body)
-    
+        
     passport.authenticate('local', function(err, user, info) {
         req.logIn(user, function(err) {
             if (err) { 
