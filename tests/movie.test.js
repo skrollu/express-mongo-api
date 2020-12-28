@@ -20,13 +20,14 @@ var testSession = session(express, { });
 
 const adminAccount = {
     "username": "test_user",
-    "password": "123",
+    "email": process.env.ADMIN_EMAIL,
+    "password": "123"
 }
 
 const adminAccountToCreate = {
     "username": "test_user",
-    "password": "123",
-    "userType": "admin"
+    "email": process.env.ADMIN_EMAIL,
+    "password": "123"
 }
 
 describe('REST API test suites', () => {

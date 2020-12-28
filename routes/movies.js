@@ -19,12 +19,19 @@ router.get("/", function (req, res) {
         error: "Error while searching for all movies " + err
       });
     } else {
+
+      /**
+       * Ne marche pas vraiment...
+       */
+      movies.sort((a, b) => {
+        b.title - a.title
+        console.log(a.title)
+      });
       
       res.json({
         user: req.user,
         movies
-      }
-      );
+      });
     }
   });
 }); 

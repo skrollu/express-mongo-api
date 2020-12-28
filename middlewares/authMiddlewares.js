@@ -1,5 +1,7 @@
+const { roles } = require('../utils/constants/roles/roles');
+
 function isAdmin(req, res, next){
-  if(req.isAuthenticated() && req.user.userType === 'admin'){ /* TODO */ //This kind of check will be replace by a search in database for more security
+  if(req.isAuthenticated() && req.user.role === roles.admin){ /* TODO */ //This kind of check will be replace by a search in database for more security
     return next();
   } else {
     res.status(401).json({
