@@ -6,6 +6,7 @@ const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 const nodemailer = require('nodemailer')
 const { body, validationResult } = require('express-validator');
 const { ensureLoggedOut, ensureLoggedIn } = require('connect-ensure-login');
+const jwt = require('jsonwebtoken');
 
 /**
 * @Route /api/users/register/
@@ -21,7 +22,7 @@ async function(req, res, next) {
         const doesExist = await Account.findOne({ email });
         
         if (doesExist) {
-
+            
             //username already exists
             res.status(400).json({    
                 registered: false,
@@ -30,59 +31,45 @@ async function(req, res, next) {
         } else {
             
             const account = new Account(req.body);
-            await account.save();
+            const accountCreated = await account.save();
             
             /**
             * Account created, a mail is sent.
-            */
-            const output = `
-            <h3> Welcome ${account.username}</h3>
-            <p> You have successfully created your account.</p>
-            <p> Please <a href="http://localhost:4201/login">login</a> to confirm the creation and consult your account. </p>
-            `;
-            
-            
+            */           
             // async..await is not allowed in global scope, must use a wrapper
             async function main() {
                 
-                // Generate test SMTP service account from ethereal.email
-                // Only needed if you don't have a real mail account for testing
-                let testAccount = await nodemailer.createTestAccount();
+                const token = jwt.sign({ "id": accountCreated._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
                 
-                // create reusable transporter object using the default SMTP transport
                 let transporter = nodemailer.createTransport({
-                    host: "smtp.ethereal.email",
-                    port: 587,
-                    secure: false, // true for 465, false for other ports
+                    service: 'gmail',
                     auth: {
-                        user: testAccount.user, // generated ethereal user
-                        pass: testAccount.pass, // generated ethereal password
-                    },
-                    tls: {
-                        rejectUnauthorizesd: false
+                        user: process.env.ADMIN_GMAIL,
+                        pass: process.env.ADMIN_GMAIL_PASSWORD
                     }
                 });
                 
-                // verify connection configuration
-                transporter.verify(function(error, success) {
-                    if (error) {
-                        console.log(error);
-                    } else {
-                        console.log("Server is ready to take our messages");
-                    }
-                });
+                const output = `
+                <h3> Welcome ${account.username}</h3>
+                <p> You have successfully created your account.</p>
+                <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your account. </p>
+                `;
                 
-                // send mail with defined transport object
-                let info = await transporter.sendMail({
-                    from: '"Gaumont" <matiber76@gmail.com>', // sender address
-                    to: `${account.email}`, // list of receivers
+                let mailOptions = {
+                    from: `${process.env.ADMIN_GMAIL}`,
+                    to: account.email,
                     subject: "Gaumont: Successfully registered.", // Subject line
-                    text: "Hello world?", // plain text body
+                    text: "Welcome", // plain text body
                     html: output, // html body
-                });
+                }
                 
-                console.log("Message sent: %s", info.messageId);
-                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+                await transporter.sendMail(mailOptions, (err, data) => {
+                    if(err) {
+                        console.log("Error", err)
+                    } else {
+                        console.log("Email sended at " + mailOptions.to)
+                    }
+                })
             }
             
             main().catch(console.error);
@@ -138,7 +125,7 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
 * @Request POST
 */
 router.post("/login", function (req, res, next) {
-        
+    
     passport.authenticate('local', function(err, user, info) {
         req.logIn(user, function(err) {
             if (err) { 
@@ -152,6 +139,68 @@ router.post("/login", function (req, res, next) {
         });
         
     })(req, res, next);
+});
+
+/**
+* @Route /api/users/login/:token
+* @Access PUBLIC
+* @Request GET
+*/
+router.get("/verify/:token", function (req, res, next) {
+    
+    let token = req.params.token
+    
+    const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
+    
+    if(decodedToken){
+        Account.findById({ _id: decodedToken.id }, (err, account) => {
+            if(account) {
+                //If Account is already verified, we don't need to do the rest of the operation.
+                if(account.verified == true) {
+                    res.json({
+                        verified: true,
+                        message: 'Your account is already verified !'
+                    });
+                    //Verification is needed
+                } else {
+                    const accountToUpdate = new Account({
+                        _id:  account._id,
+                        username: account.username,
+                        email: account.email,
+                        password: account.password,
+                        verified: true
+                    });
+                    
+                    Account.findByIdAndUpdate( account.id, { $set: accountToUpdate }, { new: true })
+                    .then((account) => {
+                        if(account) {
+                            res.json({
+                                verified: true,
+                                message: `Hello again ${account.username}, your account is now verified !`
+                            })
+                        } else {
+                            res.status(400).json({
+                                verified: false,
+                                message: `Error, verification failed !`
+                            })
+                        }
+                    })
+                    .catch((err) => {
+                        res.status(400).json({
+                            verified: false,
+                            message: `Error, verification failed: ${err}`
+                        })
+                    });
+                }
+            } else {
+                res.status(400).json({
+                    verified: false,
+                    message: `Error, Verification token seems to be good but your account doesn't exist...`
+                })
+            }
+        })
+    }
+    (req, res, next);
 });
 
 /**

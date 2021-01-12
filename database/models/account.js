@@ -33,6 +33,10 @@ var AccountSchema = new Schema({
     enum: [roles.admin, roles.moderator, roles.client],
     default: roles.client,
   },
+  verified: {
+    type: Boolean,
+    default: false
+  }
 });
 
 //AccountSchema.plugin(passportLocalMongoose);
