@@ -40,9 +40,11 @@ require('./middlewares/passportLocal')
 
 const moviesRoutes = require('./routes/movies');
 const usersRoutes = require('./routes/users');
+const cinemasRoutes = require('./routes/cinemas');
 
 app.use("/api/movies", moviesRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/cinemas", cinemasRoutes);
 
 // catch 404 and forward to error handler
 

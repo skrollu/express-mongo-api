@@ -15,7 +15,6 @@ router.get("/", function (req, res) {
     if (err) {
       //console.log("Error while searching for all movies " + err);
       res.status(400).json({
-        user: req.user,
         error: "Error while searching for all movies " + err
       });
     } else {
@@ -29,7 +28,6 @@ router.get("/", function (req, res) {
       });
       
       res.json({
-        user: req.user,
         movies
       });
     }
@@ -48,12 +46,10 @@ router.get("/:id", function (req, res) {
     if (err) {
       //console.log("Error while searching for movie " + err);
       res.status(400).json({
-        user: req.user,
         error: "Error while searching for movie " + err
       });
     } else {
       res.json({
-        user: req.user,
         movie
       });
     }
