@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { Cinema } = require('../database/models/cinema')
+const { Cinema } = require('../database/models/Cinema')
 
 /**
 * @Route /api/cinemas

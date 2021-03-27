@@ -1,7 +1,7 @@
 const express = require("express");
 const models = require("../database/models");
 const router = express.Router();
-const { Movie } = require('../database/models/movie')
+const { Movie } = require('../database/models/Movie')
 const mongoose = require('mongoose');
 const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 

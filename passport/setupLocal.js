@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const User = require("../database/models/Users");
+const User = require("../database/models/User");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const { SALT } = require('../utils/constants/passwordSalt')

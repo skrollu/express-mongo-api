@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 const passport = require("passport");
-const User = require("../database/models/Users");
+const { User } = require("../database/models/User");
 const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken');
