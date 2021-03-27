@@ -6,19 +6,18 @@ const { ApolloServer } = require('apollo-server-express');
 const dotenv = require('dotenv').config();
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const cors = require('cors'); 
-
+const cors = require('cors');
+const chalk = require('chalk')
 
 //Setup Express Server
 const app = express();
-app.use(express.static('public'));
-app.use(logger('dev'));
 
+app.use(logger('dev'));
 app.use(cors());
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(require('express-session')({
-  secret: 'keyboard cat',
+  secret: process.env.EXPRESS_SESSION_SECRET_KEY ? process.env.EXPRESS_SESSION_SECRET_KEY : 'keyboard cat',
   resave: false,
   saveUninitialized: false
 }));
@@ -34,7 +33,27 @@ const passport = require('passport');
 
 app.use(passport.initialize());
 app.use(passport.session());
-require('./middlewares/passportLocal')
+
+const { Account } = require('./database/models/account');
+
+// passport config
+passport.serializeUser((user, done) => {
+  console.log("Serializing..." + user)
+  done(null, user._id)
+});
+
+passport.deserializeUser((id, done) => {
+  console.log("Deserializing..." + id)
+  Account.findById(id, (err, user) => {
+    done(err, user)
+  })
+});
+
+const { passportLocal } = require('./middlewares/passportLocal')
+const { passportFacebook } = require('./middlewares/passportFacebook')
+
+passportLocal();
+passportFacebook();
 
 //------------------------------------------------------------------EXPRESS ROUTER SETTINGS
 

@@ -36,6 +36,14 @@ var AccountSchema = new Schema({
   verified: {
     type: Boolean,
     default: false
+  },
+  facebook: {
+    id: {
+      type: String
+    },
+    profilePicture: {
+      type: String
+    }
   }
 });
 

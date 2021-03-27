@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 const passport = require("passport");
 const { Account } = require("../database/models/account");
-const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
+const { isAdmin, isAuthenticated, auth } = require('../middlewares/authMiddlewares');
 const nodemailer = require('nodemailer')
 const { body, validationResult } = require('express-validator');
 const { ensureLoggedOut, ensureLoggedIn } = require('connect-ensure-login');
@@ -124,21 +124,9 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
 * @Access PUBLIC
 * @Request POST
 */
-router.post("/login", function (req, res, next) {
-    
-    passport.authenticate('local', function(err, user, info) {
-        req.logIn(user, function(err) {
-            if (err) { 
-                console.log(err);
-                return res.status(400).json({ logged: false, error: "Invalid Credentials" }); 
-            }
-            res.json({
-                logged: true,
-                message: "Successfully logged in !"
-            });
-        });
-        
-    })(req, res, next);
+router.post("/login", auth, (req, res) => {
+    console.log("USER ROUTE: " + req.user)
+    res.status(200).json({"statusCode" : 200 , logged: true, message: "Successfully logged in !", "user" : req.user});
 });
 
 /**
@@ -215,5 +203,54 @@ router.get("/logout", isAuthenticated, function (req, res) {
         message: "Successfully logged out !"
     });
 });
+
+/**
+ * ***************************************** FACEBOOK AUTHENTICATION ***********************************
+ */
+
+ router.post("/login", function (req, res, next) {
+    
+    passport.authenticate('local', function(err, user, info) {
+        req.logIn(user, function(err) {
+            if (err) { 
+                console.log(err);
+                return res.status(400).json({ logged: false, error: "Invalid Credentials" }); 
+            }
+            res.json({
+                logged: true,
+                message: "Successfully logged in !"
+            });
+        });
+        
+    })(req, res, next);
+});
+
+// Redirect the user to Facebook for authentication.  When complete,
+// Facebook will redirect the user back to the application at
+//     /auth/facebook/callback
+router.get('/auth/facebook', function (req, res, next) {
+    
+    passport.authenticate('facebook', (err, user, info) => {
+        console.log("authentication en cours...")
+    })
+    
+    (req, res, next);
+});
+
+// Facebook will redirect the user to this URL after approval.  Finish the
+// authentication process by attempting to obtain an access token.  If
+// access was granted, the user will be logged in.  Otherwise,
+// authentication has failed.
+router.get('/auth/facebook/callback',() => {
+    console.log("/auth/facebook/callback");
+    passport.authenticate('facebook', { failureRedirect: '' }), (req, res) => {
+        return res.redirect('http://localhost:4201/')
+    } 
+});
+
+router.get('/failed', (req, res)=> {
+    res.send("failed")
+});
+
 
 module.exports = router;

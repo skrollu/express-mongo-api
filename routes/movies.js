@@ -11,7 +11,7 @@ const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 * @Request GET
 */
 router.get("/", function (req, res) {
-  models.Movie.find({}, (err, movies) => {
+  models.Movie.find({}, async (err, movies) => {
     if (err) {
       //console.log("Error while searching for all movies " + err);
       res.status(400).json({
@@ -22,9 +22,8 @@ router.get("/", function (req, res) {
       /**
        * Ne marche pas vraiment...
        */
-      movies.sort((a, b) => {
+      await movies.sort((a, b) => {
         b.title - a.title
-        console.log(a.title)
       });
       
       res.json({
