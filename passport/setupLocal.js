@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../database/models/Users");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+const { SALT } = require('../utils/constants/passwordSalt')
 
 /**
  * serializeUser: The user id (we provide as the second argument of the done function) is saved 
@@ -34,14 +35,15 @@ passport.deserializeUser((id, done) => {
 // Local Strategy
 passport.use(
     new LocalStrategy({ usernameField: "email", passwordField: "password" }, (email, password, done) => {
+        console.log("Local strategy: " + email + " " + password)
         // Match User
-        User.findOne({ email: email })
+        User.findOne({ email })
             .then(user => {
                 // Create new User
                 if (!user) {
                     const newUser = new User({ email, password });
                     // Hash password before saving in database
-                    bcrypt.genSalt(10, (err, salt) => {
+                    bcrypt.genSalt(SALT, (err, salt) => {
                         bcrypt.hash(newUser.password, salt, (err, hash) => {
                             if (err) throw err;
                             newUser.password = hash;
@@ -55,7 +57,7 @@ passport.use(
                                 });
                         });
                     });
-                    // Return other user
+                // Return other user
                 } else {
                     // Match password
                     bcrypt.compare(password, user.password, (err, isMatch) => {

@@ -1,5 +1,4 @@
-const { roles } = require('../utils/constants/roles/roles');
-const passport = require('passport')
+const { roles } = require('../utils/constants/roles');
 
 function isAdmin(req, res, next){
   /* TODO */ //This kind of check will be replace by a search in database for more security
@@ -24,23 +23,7 @@ function isAuthenticated(req, res, next) {
   }
 }
 
-function auth(req, res, next) {
-  console.log("AUTH MIDDLEWARE " + req.user)
-  passport.authenticate('local', (error, user, info) => {
-    if(error) {
-      res.status(400).json({"statusCode" : 200 , "message" : error});
-    }
-    req.login(user, function(error) {
-      if (error) {
-        return next(error);
-      }
-      next();
-    });
-  })(req, res, next);
-}
-
 module.exports = {
   isAdmin,
-  isAuthenticated,
-  auth
+  isAuthenticated
 }

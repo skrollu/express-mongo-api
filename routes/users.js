@@ -1,17 +1,19 @@
 var express = require('express');
 var router = express.Router();
 const passport = require("passport");
-const { Users } = require("../database/models/Users");
-const { isAdmin, isAuthenticated, auth } = require('../middlewares/authMiddlewares');
+const User = require("../database/models/Users");
+const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken');
+const { SALT } = require('../utils/constants/passwordSalt')
+const bcrypt = require('bcryptjs')
 
 /**
 * @Route /api/users/register_login/
 * @Access PUBLIC
 * @Request POST
 */
-router.post("/register_login", (req, res, next) => {
+router.post("/login", (req, res, next) => {
     passport.authenticate("local", function(err, user, info) {
         if (err) {
             return res.status(400).json({ errors: err });
@@ -33,71 +35,79 @@ router.post("/register_login", (req, res, next) => {
 * @Access PUBLIC
 * @Request POST
 */
-router.post('/register', 
-/*ensureLoggedOut({ redirectTo: '/' }), */ // mieux vaut faire maison car cela correspond plus à l'utilisation d'un view engine
-/* registerValidator,*/
-async function(req, res, next) {
+router.post('/register', async function(req, res, next) {
     try {
-        const { email } = req.body;
-        const doesExist = await Users.findOne({ email });
+        const { email, password } = req.body;
+        const exist = await User.findOne({ email });
         
-        if (doesExist) {
-            
+        if (exist) {
             //username already exists
             res.status(400).json({    
-                registered: false,
-                error: "ERROR: Username or Email already used"
+                error: "ERROR: Email already used"
             });
         } else {
             
-            const Users = new Users(req.body);
-            const UsersCreated = await Users.save();
-            
-            /**
-            * Users created, a mail is sent.
-            */           
-            // async..await is not allowed in global scope, must use a wrapper
-            async function main() {
-                
-                const token = jwt.sign({ "id": UsersCreated._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
-                
-                let transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    auth: {
-                        user: process.env.ADMIN_GMAIL,
-                        pass: process.env.ADMIN_GMAIL_PASSWORD
-                    }
+            const newUser = new User({ email, password });
+            // Hash password before saving in database
+            bcrypt.genSalt(SALT, (err, salt) => {
+                bcrypt.hash(newUser.password, salt, (err, hash) => {
+                    if (err) throw err;
+                    newUser.password = hash;
+                    newUser.save()
+                        .then(user => {
+                            /**
+                            * Users created, a mail is sent.
+                            */           
+                            // async..await is not allowed in global scope, must use a wrapper
+                            // mail push WebService to come...
+                            async function main() {
+                                
+                                const token = jwt.sign({ "id": user._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
+                                
+                                let transporter = nodemailer.createTransport({
+                                    service: 'gmail',
+                                    auth: {
+                                        user: process.env.ADMIN_GMAIL,
+                                        pass: process.env.ADMIN_GMAIL_PASSWORD
+                                    }
+                                });
+                                
+                                const output = `
+                                <h3> Welcome ${user.email}</h3>
+                                <p> You have successfully created your account.</p>
+                                <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your account. </p>
+                                `;
+                                
+                                let mailOptions = {
+                                    from: `${process.env.ADMIN_GMAIL}`,
+                                    to: user.email,
+                                    subject: "Gaumont: Successfully registered.", // Subject line
+                                    text: "Welcome", // plain text body
+                                    html: output, // html body
+                                }
+                                
+                                await transporter.sendMail(mailOptions, (err, data) => {
+                                    if(err) {
+                                        console.log("Error", err)
+                                    } else {
+                                        console.log("Email sended at " + mailOptions.to)
+                                    }
+                                })
+                            }
+                            
+                            main().catch(console.error);
+                        })
+                        .catch(err => {
+                            res.status(400).json({
+                                error: err
+                            })
+                        });
+
+                    res.status(200).json({
+                        message: "Successfully registered !"
+                    })
                 });
-                
-                const output = `
-                <h3> Welcome ${Users.username}</h3>
-                <p> You have successfully created your Users.</p>
-                <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your Users. </p>
-                `;
-                
-                let mailOptions = {
-                    from: `${process.env.ADMIN_GMAIL}`,
-                    to: Users.email,
-                    subject: "Gaumont: Successfully registered.", // Subject line
-                    text: "Welcome", // plain text body
-                    html: output, // html body
-                }
-                
-                await transporter.sendMail(mailOptions, (err, data) => {
-                    if(err) {
-                        console.log("Error", err)
-                    } else {
-                        console.log("Email sended at " + mailOptions.to)
-                    }
-                })
-            }
-            
-            main().catch(console.error);
-            
-            res.json({
-                registered: true,
-                message: "Successfully registered !"
-            })
+            });  
         } 
     } catch (err) {
         next(err);
@@ -114,16 +124,16 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
     
     const user = req.user;
     
-    Users.findOneAndRemove({ username: user.username })
+    User.findOneAndRemove({ email: user.email })
     .then((user, err) => {
         if (user) {
             req.logout();
-            res.json({
+            res.status(200).json({
                 deleted: true,
                 user
             });
         } else {
-            res.json({
+            res.status(400).json({
                 deleted: false,
                 error: "ERROR: user wasn't find and wasn't deleted" + err
             });
@@ -132,7 +142,7 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
     .catch((err) => {
         // error during method
         //console.log(err);      
-        res.json({
+        res.status(400).json({
             deleted: false,
             error: err
         });
@@ -152,30 +162,27 @@ router.get("/verify/:token", function (req, res, next) {
     const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
     
     if(decodedToken){
-        Users.findById({ _id: decodedToken.id }, (err, Users) => {
-            if(Users) {
-                //If Users is already verified, we don't need to do the rest of the operation.
-                if(Users.verified == true) {
-                    res.json({
+        User.findById({ _id: decodedToken.id }, (err, user) => {
+            if(user) {
+                //If user is already verified, we don't need to do the rest of the operation.
+                if(user.email_is_verified == true) {
+                    res.status(200).json({
                         verified: true,
-                        message: 'Your Users is already verified !'
+                        message: 'Your account is already verified !'
                     });
-                    //Verification is needed
+                //Verification is needed
                 } else {
-                    const UsersToUpdate = new Users({
-                        _id:  Users._id,
-                        username: Users.username,
-                        email: Users.email,
-                        password: Users.password,
-                        verified: true
+                    const userToUpdate = new User({
+                        ...user,
+                        email_is_verified: true
                     });
                     
-                    Users.findByIdAndUpdate( Users.id, { $set: UsersToUpdate }, { new: true })
-                    .then((Users) => {
-                        if(Users) {
-                            res.json({
+                    User.findByIdAndUpdate( user.id, { $set: userToUpdate }, { new: true })
+                    .then((updatedUser) => {
+                        if(updatedUser) {
+                            res.satus(200).json({
                                 verified: true,
-                                message: `Hello again ${Users.username}, your Users is now verified !`
+                                message: `Hello again ${updatedUser.email}, your account is now verified !`
                             })
                         } else {
                             res.status(400).json({
@@ -209,7 +216,7 @@ router.get("/verify/:token", function (req, res, next) {
 */
 router.get("/logout", isAuthenticated, function (req, res) {
     req.logout();
-    res.json({
+    res.status(200).json({
         logged: false,
         message: "Successfully logged out !"
     });
@@ -218,23 +225,6 @@ router.get("/logout", isAuthenticated, function (req, res) {
 /**
  * ***************************************** FACEBOOK AUTHENTICATION ***********************************
  */
-
- router.post("/login", function (req, res, next) {
-    
-    passport.authenticate('local', function(err, user, info) {
-        req.logIn(user, function(err) {
-            if (err) { 
-                console.log(err);
-                return res.status(400).json({ logged: false, error: "Invalid Credentials" }); 
-            }
-            res.json({
-                logged: true,
-                message: "Successfully logged in !"
-            });
-        });
-        
-    })(req, res, next);
-});
 
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at
