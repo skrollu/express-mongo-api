@@ -1,6 +1,6 @@
-const chalk = require('chalk')
+/* const chalk = require('chalk')
 const passport = require('passport');
-const { Account } = require('../database/models/account');
+const { Users } = require('../database/models/Users');
 const FacebookStrategy = require("passport-facebook").Strategy;
 
 const passportFacebook = () => {
@@ -50,4 +50,4 @@ const passportFacebook = () => {
 
 module.exports = {
     passportFacebook
-}
+} */

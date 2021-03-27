@@ -1,12 +1,32 @@
 var express = require('express');
 var router = express.Router();
 const passport = require("passport");
-const { Account } = require("../database/models/account");
+const { Users } = require("../database/models/Users");
 const { isAdmin, isAuthenticated, auth } = require('../middlewares/authMiddlewares');
 const nodemailer = require('nodemailer')
-const { body, validationResult } = require('express-validator');
-const { ensureLoggedOut, ensureLoggedIn } = require('connect-ensure-login');
 const jwt = require('jsonwebtoken');
+
+/**
+* @Route /api/users/register_login/
+* @Access PUBLIC
+* @Request POST
+*/
+router.post("/register_login", (req, res, next) => {
+    passport.authenticate("local", function(err, user, info) {
+        if (err) {
+            return res.status(400).json({ errors: err });
+        }
+        if (!user) {
+            return res.status(400).json({ errors: "No user found" });
+        }
+        req.logIn(user, function(err) {
+            if (err) {
+                return res.status(400).json({ errors: err });
+            }
+            return res.status(200).json({ success: `logged in ${user.id} and ${user.name}` });
+        });
+    })(req, res, next);
+});
 
 /**
 * @Route /api/users/register/
@@ -19,7 +39,7 @@ router.post('/register',
 async function(req, res, next) {
     try {
         const { email } = req.body;
-        const doesExist = await Account.findOne({ email });
+        const doesExist = await Users.findOne({ email });
         
         if (doesExist) {
             
@@ -30,16 +50,16 @@ async function(req, res, next) {
             });
         } else {
             
-            const account = new Account(req.body);
-            const accountCreated = await account.save();
+            const Users = new Users(req.body);
+            const UsersCreated = await Users.save();
             
             /**
-            * Account created, a mail is sent.
+            * Users created, a mail is sent.
             */           
             // async..await is not allowed in global scope, must use a wrapper
             async function main() {
                 
-                const token = jwt.sign({ "id": accountCreated._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
+                const token = jwt.sign({ "id": UsersCreated._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
                 
                 let transporter = nodemailer.createTransport({
                     service: 'gmail',
@@ -50,14 +70,14 @@ async function(req, res, next) {
                 });
                 
                 const output = `
-                <h3> Welcome ${account.username}</h3>
-                <p> You have successfully created your account.</p>
-                <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your account. </p>
+                <h3> Welcome ${Users.username}</h3>
+                <p> You have successfully created your Users.</p>
+                <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your Users. </p>
                 `;
                 
                 let mailOptions = {
                     from: `${process.env.ADMIN_GMAIL}`,
-                    to: account.email,
+                    to: Users.email,
                     subject: "Gaumont: Successfully registered.", // Subject line
                     text: "Welcome", // plain text body
                     html: output, // html body
@@ -88,13 +108,13 @@ async function(req, res, next) {
 * @Route /api/users/delete/
 * @Access PRIVATE
 * @Request DELETE
-* Need to be the owner of the account to delete it, so it's needed to be connected.
+* Need to be the owner of the Users to delete it, so it's needed to be connected.
 */
 router.delete("/delete", isAuthenticated,  function (req, res) {
     
     const user = req.user;
     
-    Account.findOneAndRemove({ username: user.username })
+    Users.findOneAndRemove({ username: user.username })
     .then((user, err) => {
         if (user) {
             req.logout();
@@ -119,15 +139,6 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
     });
 });
 
-/**
-* @Route /api/users/login/
-* @Access PUBLIC
-* @Request POST
-*/
-router.post("/login", auth, (req, res) => {
-    console.log("USER ROUTE: " + req.user)
-    res.status(200).json({"statusCode" : 200 , logged: true, message: "Successfully logged in !", "user" : req.user});
-});
 
 /**
 * @Route /api/users/login/:token
@@ -141,30 +152,30 @@ router.get("/verify/:token", function (req, res, next) {
     const decodedToken = jwt.verify(token, process.env.TOKEN_SECRET_KEY);
     
     if(decodedToken){
-        Account.findById({ _id: decodedToken.id }, (err, account) => {
-            if(account) {
-                //If Account is already verified, we don't need to do the rest of the operation.
-                if(account.verified == true) {
+        Users.findById({ _id: decodedToken.id }, (err, Users) => {
+            if(Users) {
+                //If Users is already verified, we don't need to do the rest of the operation.
+                if(Users.verified == true) {
                     res.json({
                         verified: true,
-                        message: 'Your account is already verified !'
+                        message: 'Your Users is already verified !'
                     });
                     //Verification is needed
                 } else {
-                    const accountToUpdate = new Account({
-                        _id:  account._id,
-                        username: account.username,
-                        email: account.email,
-                        password: account.password,
+                    const UsersToUpdate = new Users({
+                        _id:  Users._id,
+                        username: Users.username,
+                        email: Users.email,
+                        password: Users.password,
                         verified: true
                     });
                     
-                    Account.findByIdAndUpdate( account.id, { $set: accountToUpdate }, { new: true })
-                    .then((account) => {
-                        if(account) {
+                    Users.findByIdAndUpdate( Users.id, { $set: UsersToUpdate }, { new: true })
+                    .then((Users) => {
+                        if(Users) {
                             res.json({
                                 verified: true,
-                                message: `Hello again ${account.username}, your account is now verified !`
+                                message: `Hello again ${Users.username}, your Users is now verified !`
                             })
                         } else {
                             res.status(400).json({
@@ -183,7 +194,7 @@ router.get("/verify/:token", function (req, res, next) {
             } else {
                 res.status(400).json({
                     verified: false,
-                    message: `Error, Verification token seems to be good but your account doesn't exist...`
+                    message: `Error, Verification token seems to be good but your Users doesn't exist...`
                 })
             }
         })

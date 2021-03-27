@@ -1,9 +1,9 @@
 const { Movie } = require("./movie");
-const { Account } = require("./account");
+const { Users } = require("./Users");
 const { Cinema } = require("./cinema");
 
 module.exports = {
   Movie,
-  Account,
+  Users,
   Cinema
 }

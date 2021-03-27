@@ -5,55 +5,38 @@ const { ApolloServer } = require('apollo-server-express');
 //const utils = require('./utils')
 const dotenv = require('dotenv').config();
 const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
 const cors = require('cors');
-const chalk = require('chalk')
-
-//Setup Express Server
-const app = express();
-
-app.use(logger('dev'));
-app.use(cors());
-app.use(bodyParser.json());
-app.use(cookieParser());
-app.use(require('express-session')({
-  secret: process.env.EXPRESS_SESSION_SECRET_KEY ? process.env.EXPRESS_SESSION_SECRET_KEY : 'keyboard cat',
-  resave: false,
-  saveUninitialized: false
-}));
+const chalk = require('chalk')// can color the log
+const MongoStore = require('connect-mongo');
+//const mongoose = require('mongoose')
 
 //------------------------------------------------------------------DATABASE CONNECTION
 
 const { connectDb } = require("./database/database")
 connectDb();
 
+//------------------------------------------------------------------Setup Express Server
+
+const app = express();
+
+app.use(logger('dev'));
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }))
+app.use(cookieParser());
+app.use(require('express-session')({
+  secret: process.env.EXPRESS_SESSION_SECRET_KEY ? process.env.EXPRESS_SESSION_SECRET_KEY : 'keyboard cat',
+  resave: false,
+  saveUninitialized: false,
+  //store: MongoStore.create({ mongooseConnection: mongoose.connection })
+}));
+
 //------------------------------------------------------------------PASSPORT SETTINGS
 
-const passport = require('passport');
+const passport = require('./passport/setupLocal');
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-const { Account } = require('./database/models/account');
-
-// passport config
-passport.serializeUser((user, done) => {
-  console.log("Serializing..." + user)
-  done(null, user._id)
-});
-
-passport.deserializeUser((id, done) => {
-  console.log("Deserializing..." + id)
-  Account.findById(id, (err, user) => {
-    done(err, user)
-  })
-});
-
-const { passportLocal } = require('./middlewares/passportLocal')
-const { passportFacebook } = require('./middlewares/passportFacebook')
-
-passportLocal();
-passportFacebook();
 
 //------------------------------------------------------------------EXPRESS ROUTER SETTINGS
 
@@ -131,9 +114,6 @@ server.applyMiddleware({ app, path: '/graphql' });
 app.on('error', onError);
 //app.on('listening', onListening);
 
-
-
-
 /**
 * Event listener for HTTP server "error" event.
 */
@@ -177,7 +157,5 @@ function onListening() {
 }
 
 */
-
-
 
 module.exports = { app, server } // to test better practice surely exist
