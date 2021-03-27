@@ -1,4 +1,11 @@
 const mongoose = require("mongoose");
+const { SALT } = require('../../utils/constants/passwordSalt')
+const bcrypt = require('bcryptjs')
+
+const validateEmail = (email) => {
+  var regex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  return regex.test(email)
+};
 
 const ThirdPartyProviderSchema = new mongoose.Schema({
     provider_name: {
@@ -33,7 +40,10 @@ const UserSchema = new mongoose.Schema(
         email: {
             type: String,
             required: true,
-            unique: true
+            unique: true,
+            trim: true,
+            validate: [validateEmail, 'Please fill a valid email address']
+            //match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
         },
         email_is_verified: {
             type: Boolean,
@@ -70,6 +80,32 @@ const UserSchema = new mongoose.Schema(
      */
     { strict: false }
 );
+
+// Hash password before saving in database
+UserSchema.pre('save', async function (next) {
+    try {
+        if (this.isNew) {
+            bcrypt.genSalt(SALT, (err, salt) => {
+                bcrypt.hash(this.password, salt, (err, hashedPassword) => {
+                    this.password = hashedPassword;
+                });
+            });
+        }
+        next();
+    } catch (error) {
+        console.log(error)
+        next(error);
+    }
+});
+
+UserSchema.method('isValidPassword', async (password, encryptedPassword) => {
+    try {
+        return await bcrypt.compare(password, encryptedPassword);
+    } catch (err) {
+        throw err;
+        //throw httpError from http error module (tuto https://www.youtube.com/watch?v=4Az0hCr3g7U)
+    }
+});
 
 const User = mongoose.model("Users", UserSchema, "Users");
 module.exports = { User }

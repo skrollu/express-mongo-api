@@ -19,7 +19,11 @@ router.post("/login", (req, res, next) => {
             return res.status(400).json({ errors: err });
         }
         if (!user) {
-            return res.status(400).json({ errors: "No user found" });
+            if(!info.email_is_verified) {
+                return res.status(400).json({ errors: info.message });
+            } else {
+                return res.status(400).json({ errors: "No user found" });
+            }
         }
         req.logIn(user, function(err) {
             if (err) {
@@ -48,66 +52,60 @@ router.post('/register', async function(req, res, next) {
         } else {
             
             const newUser = new User({ email, password });
-            // Hash password before saving in database
-            bcrypt.genSalt(SALT, (err, salt) => {
-                bcrypt.hash(newUser.password, salt, (err, hash) => {
-                    if (err) throw err;
-                    newUser.password = hash;
-                    newUser.save()
-                        .then(user => {
-                            /**
-                            * Users created, a mail is sent.
-                            */           
-                            // async..await is not allowed in global scope, must use a wrapper
-                            // mail push WebService to come...
-                            async function main() {
-                                
-                                const token = jwt.sign({ "id": user._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
-                                
-                                let transporter = nodemailer.createTransport({
-                                    service: 'gmail',
-                                    auth: {
-                                        user: process.env.ADMIN_GMAIL,
-                                        pass: process.env.ADMIN_GMAIL_PASSWORD
-                                    }
-                                });
-                                
-                                const output = `
-                                <h3> Welcome ${user.email}</h3>
-                                <p> You have successfully created your account.</p>
-                                <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your account. </p>
-                                `;
-                                
-                                let mailOptions = {
-                                    from: `${process.env.ADMIN_GMAIL}`,
-                                    to: user.email,
-                                    subject: "Gaumont: Successfully registered.", // Subject line
-                                    text: "Welcome", // plain text body
-                                    html: output, // html body
-                                }
-                                
-                                await transporter.sendMail(mailOptions, (err, data) => {
-                                    if(err) {
-                                        console.log("Error", err)
-                                    } else {
-                                        console.log("Email sended at " + mailOptions.to)
-                                    }
-                                })
-                            }
-                            
-                            main().catch(console.error);
-                        })
-                        .catch(err => {
-                            res.status(400).json({
-                                error: err
-                            })
-                        });
-
-                    res.status(200).json({
-                        message: "Successfully registered !"
+            
+            newUser.save()
+            .then(user => {
+                /**
+                * Users created, a mail is sent.
+                */           
+                // async..await is not allowed in global scope, must use a wrapper
+                // mail push WebService to come...
+                async function main() {
+                    
+                    const token = jwt.sign({ "id": user._id }, process.env.TOKEN_SECRET_KEY, { expiresIn: '1d'})
+                    
+                    let transporter = nodemailer.createTransport({
+                        service: 'gmail',
+                        auth: {
+                            user: process.env.ADMIN_GMAIL,
+                            pass: process.env.ADMIN_GMAIL_PASSWORD
+                        }
+                    });
+                    
+                    const output = `
+                    <h3> Welcome ${user.email}</h3>
+                    <p> You have successfully created your account.</p>
+                    <p> Please <a href="http://localhost:4000/api/users/verify/${token}">login</a> to confirm the creation and consult your account. </p>
+                    `;
+                    
+                    let mailOptions = {
+                        from: `${process.env.ADMIN_GMAIL}`,
+                        to: user.email,
+                        subject: "Gaumont: Successfully registered.", // Subject line
+                        text: "Welcome", // plain text body
+                        html: output, // html body
+                    }
+                    
+                    await transporter.sendMail(mailOptions, (err, data) => {
+                        if(err) {
+                            console.log("Error", err)
+                        } else {
+                            console.log("Email sended at " + mailOptions.to)
+                        }
                     })
-                });
-            });  
+                }
+                
+                main().catch(console.error);
+            })
+            .catch(err => {
+                res.status(400).json({
+                    error: err
+                })
+            });
+            
+            res.status(200).json({
+                message: "Successfully registered !"
+            })
         } 
     } catch (err) {
         next(err);
@@ -170,7 +168,7 @@ router.get("/verify/:token", function (req, res, next) {
                         verified: true,
                         message: 'Your account is already verified !'
                     });
-                //Verification is needed
+                    //Verification is needed
                 } else {
                     const userToUpdate = new User({
                         ...user,
@@ -223,8 +221,8 @@ router.get("/logout", isAuthenticated, function (req, res) {
 });
 
 /**
- * ***************************************** FACEBOOK AUTHENTICATION ***********************************
- */
+* ***************************************** FACEBOOK AUTHENTICATION ***********************************
+*/
 
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at

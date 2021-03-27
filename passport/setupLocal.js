@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const User = require("../database/models/User");
+const { User } = require("../database/models/User");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const { SALT } = require('../utils/constants/passwordSalt')
@@ -39,36 +39,21 @@ passport.use(
         // Match User
         User.findOne({ email })
             .then(user => {
-                // Create new User
                 if (!user) {
-                    const newUser = new User({ email, password });
-                    // Hash password before saving in database
-                    bcrypt.genSalt(SALT, (err, salt) => {
-                        bcrypt.hash(newUser.password, salt, (err, hash) => {
-                            if (err) throw err;
-                            newUser.password = hash;
-                            newUser
-                                .save()
-                                .then(user => {
-                                    return done(null, user);
-                                })
-                                .catch(err => {
-                                    return done(null, false, { message: err });
-                                });
-                        });
-                    });
-                // Return other user
+                    return done(null, false, { message: err });
+                // Compare password and identify user
                 } else {
-                    // Match password
-                    bcrypt.compare(password, user.password, (err, isMatch) => {
-                        if (err) throw err;
-
-                        if (isMatch) {
+                    if(user.email_is_verified) {
+                        // Match password
+                        const isMatched = user.isValidPassword(password, user.password);
+                        if (isMatched) {
                             return done(null, user);
                         } else {
                             return done(null, false, { message: "Wrong password" });
                         }
-                    });
+                    } else {
+                        return done(null, false, { message: "Email isn't verified, can't connect", email_is_verified: false });
+                    }
                 }
             })
             .catch(err => {
