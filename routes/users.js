@@ -1,12 +1,16 @@
 var express = require('express');
 var router = express.Router();
-const passport = require("passport");
 const { User } = require("../database/models/User");
 const { isAdmin, isAuthenticated } = require('../middlewares/authMiddlewares');
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken');
 const { SALT } = require('../utils/constants/passwordSalt')
 const bcrypt = require('bcryptjs')
+const chalk = require('chalk')
+
+const passportLocal = require('../passport/setupLocal')
+const passportFacebook = require('../passport/setupFacebook');
+const passportTwitter = require('../passport/setupTwitter')
 
 /**
 * @Route /api/users/register_login/
@@ -14,7 +18,7 @@ const bcrypt = require('bcryptjs')
 * @Request POST
 */
 router.post("/login", (req, res, next) => {
-    passport.authenticate("local", function(err, user, info) {
+    passportLocal.authenticate("local", function(err, user, info) {
         if (err) {
             return res.status(400).json({ errors: err });
         }
@@ -126,6 +130,7 @@ router.delete("/delete", isAuthenticated,  function (req, res) {
     .then((user, err) => {
         if (user) {
             req.logout();
+            console.warn(chalk.yellow("Logged out, do not user in response in production..."))
             res.status(200).json({
                 deleted: true,
                 user
@@ -221,20 +226,14 @@ router.get("/logout", isAuthenticated, function (req, res) {
 });
 
 /**
-* ***************************************** FACEBOOK AUTHENTICATION ***********************************
+* ***************************************** THIRD PARTY AUTHENTICATION ***********************************
 */
+
 
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at
-//     /auth/facebook/callback
-router.get('/auth/facebook', function (req, res, next) {
-    
-    passport.authenticate('facebook', (err, user, info) => {
-        console.log("authentication en cours...")
-    })
-    
-    (req, res, next);
-});
+//     /auth/facebook/callback see callbackURL in FacebookStrategy
+router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
 
 // Facebook will redirect the user to this URL after approval.  Finish the
 // authentication process by attempting to obtain an access token.  If
@@ -242,14 +241,21 @@ router.get('/auth/facebook', function (req, res, next) {
 // authentication has failed.
 router.get('/auth/facebook/callback',() => {
     console.log("/auth/facebook/callback");
-    passport.authenticate('facebook', { failureRedirect: '' }), (req, res) => {
-        return res.redirect('http://localhost:4201/')
+    passportFacebook.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
+        res.status(200).json({
+            message: "Successfully authenticated by facebook account",
+            user: req.user
+        })
     } 
 });
 
-router.get('/failed', (req, res)=> {
-    res.send("failed")
-});
+router.get('/auth/twitter', passportTwitter.authenticate('twitter'));
 
+router.get('/auth/twitter/callback',
+  passportTwitter.authenticate('twitter', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication
+    res.json(req.user);
+  });
 
 module.exports = router;

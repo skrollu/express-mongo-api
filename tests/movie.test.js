@@ -5,8 +5,8 @@ process.env.ADMIN_EMAIL = "test@mail.fr"
 
 const session = require('supertest-session');
 const { app, server } = require('../server');
-const { Account } = require('../database/models/account');
-const { Movie } = require('../database/models/movie');
+const { User } = require('../database/models/User');
+const { Movie } = require('../database/models/Movie');
 const { disconnectDb } = require("../database/database")
 
 const port = process.env.PORT;
@@ -19,13 +19,13 @@ const express = app.listen({ port: port }, () => {
 //var cookie;
 var testSession = session(express, { });
 
-const adminAccount = {
+const adminUser = {
     "username": "test_user",
     "email": process.env.ADMIN_EMAIL,
     "password": "123"
 }
 
-const adminAccountToCreate = {
+const adminUserToCreate = {
     "username": "test_user",
     "email": process.env.ADMIN_EMAIL,
     "password": "123"
@@ -35,29 +35,29 @@ describe('REST API test suites', () => {
     
     beforeAll( async (done) => {
         await Movie.deleteMany({});
-        await Account.deleteMany({});
+        await User.deleteMany({});
         done();
     })
     
     afterAll( async (done) => {
-        await Account.deleteMany({})
+        await User.deleteMany({})
         await Movie.deleteMany({});
         disconnectDb();
         express.close(done);
     });
     
-    describe('REST API: Register account test suite', () => {   
+    describe('REST API: Register User test suite', () => {   
         
         afterAll( async (done) => {
-            await Account.deleteMany({})
+            await User.deleteMany({})
             await Movie.deleteMany({});
             done();
         });
         
-        it('post(/api/users/register): Register a new account', async (done) => {
+        it('post(/api/users/register): Register a new User', async (done) => {
             await session(express).post('/api/users/register')
             .set('Accept', 'application/json')
-            .send(adminAccountToCreate)
+            .send(adminUserToCreate)
             .expect((res) => {
                 expect(res.body.message).toBeDefined();
                 expect(res.body.registered).toBeTruthy();
@@ -65,10 +65,10 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('post(/api/users/register): Register the same account will throw an error', async (done) => {
+        it('post(/api/users/register): Register the same User will throw an error', async (done) => {
             await session(express).post('/api/users/register')
             .set('Accept', 'application/json')
-            .send(adminAccountToCreate)
+            .send(adminUserToCreate)
             .expect(400)
             .then((res) => {
                 expect(res.body.error).toBeDefined();
@@ -78,25 +78,25 @@ describe('REST API test suites', () => {
         })
     });
     
-    describe('REST API: Login and logged Account routes test suite', () => {
+    describe('REST API: Login and logged User routes test suite', () => {
         
         
         beforeAll( async (done) => {
-            await Account.deleteMany({});
+            await User.deleteMany({});
             await Movie.deleteMany({});
             done();
         })
         
         afterAll( async (done) => {
-            await Account.deleteMany({})
+            await User.deleteMany({})
             await Movie.deleteMany({});
             done();
         });
              
-        it('post(/api/users/register): Register a new account', async (done) => {
+        it('post(/api/users/register): Register a new User', async (done) => {
             await session(express).post('/api/users/register')
             .set('Accept', 'application/json')
-            .send(adminAccountToCreate)
+            .send(adminUserToCreate)
             .expect((res) => {
                 expect(res.body.message).toBeDefined();
                 expect(res.body.registered).toBeTruthy();
@@ -104,10 +104,10 @@ describe('REST API test suites', () => {
             })
         })
                         
-        it('post(/api/users/login): Login with the account previously created', async (done) => {
+        it('post(/api/users/login): Login with the User previously created', async (done) => {
             await testSession.post('/api/users/login')
             .set('Accept', 'application/json')
-            .send(adminAccount)
+            .send(adminUser)
             .expect(200)
             .then((res) => {
                 expect(res.body.message).toEqual("Successfully logged in !");
@@ -119,7 +119,7 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('delete(/api/users/delete): delete previously created account and logout', async (done) => {
+        it('delete(/api/users/delete): delete previously created User and logout', async (done) => {
             await testSession.delete('/api/users/delete')
             .set('Accept', 'application/json')
             //.set('Cookie', cookie)
@@ -131,7 +131,7 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('get(/api/users/logout): Logout previously logged in account should get error because already logged out when deleting account', async (done) => {
+        it('get(/api/users/logout): Logout previously logged in User should get error because already logged out when deleting User', async (done) => {
             await testSession.get('/api/users/logout')
             .expect(401)
             .then((res) => {
@@ -142,10 +142,10 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('post(/api/users/register): Register a new account', async (done) => {
+        it('post(/api/users/register): Register a new User', async (done) => {
             await session(app).post('/api/users/register')
             .set('Accept', 'application/json')
-            .send(adminAccountToCreate)
+            .send(adminUserToCreate)
             .expect((res) => {
                 expect(res.body.message).toBeDefined();
                 expect(res.body.registered).toBeTruthy();
@@ -153,17 +153,17 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('post(/api/users/login): Login with the previously created account', async (done) => {
+        it('post(/api/users/login): Login with the previously created User', async (done) => {
             await testSession.post('/api/users/login')
             .set('Accept', 'application/json')
-            .send(adminAccount)
+            .send(adminUser)
             .expect(200)
             .then((res) => {
                 done()
             })
         })
         
-        it('get(/api/users/logout): Logout previously logged in account', async (done) => {
+        it('get(/api/users/logout): Logout previously logged in User', async (done) => {
             await testSession.get('/api/users/logout')
             .expect(200)
             .then((res) => {
@@ -173,7 +173,7 @@ describe('REST API test suites', () => {
             })
         })
         
-        it('delete(/api/users/delete): delete previously created account', async (done) => {
+        it('delete(/api/users/delete): delete previously created User', async (done) => {
             await testSession.delete('/api/users/delete')
             .set('Accept', 'application/json')
             .expect(401)
@@ -191,15 +191,15 @@ describe('REST API test suites', () => {
         var id;
         
         afterAll( async (done) => {
-            await Account.deleteMany({})
+            await User.deleteMany({})
             await Movie.deleteMany({});
             done()
         })
         
-        it('post(/api/users/register): Register a new account', async (done) => {
+        it('post(/api/users/register): Register a new User', async (done) => {
             await session(app).post('/api/users/register')
             .set('Accept', 'application/json')
-            .send(adminAccountToCreate)
+            .send(adminUserToCreate)
             .expect((res) => {
                 expect(res.body.message).toBeDefined();
                 expect(res.body.registered).toBeTruthy();
@@ -208,10 +208,10 @@ describe('REST API test suites', () => {
         })
         
         
-        it('post(/api/users/login): Login with the account previously created', async (done) => {
+        it('post(/api/users/login): Login with the User previously created', async (done) => {
             await testSession.post('/api/users/login')
             .set('Accept', 'application/json')
-            .send(adminAccount)
+            .send(adminUser)
             .expect(200)
             .then((res) => {
                 done()
@@ -324,7 +324,7 @@ describe('REST API test suites', () => {
             });
         })
         
-        it('delete(/api/users/delete): delete previously created account', async (done) => {
+        it('delete(/api/users/delete): delete previously created User', async (done) => {
             await testSession.delete('/api/users/delete')
             .set('Accept', 'application/json')
             //.set('Cookie', cookie)

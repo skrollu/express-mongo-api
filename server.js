@@ -28,12 +28,12 @@ app.use(require('express-session')({
   secret: process.env.EXPRESS_SESSION_SECRET_KEY ? process.env.EXPRESS_SESSION_SECRET_KEY : 'keyboard cat',
   resave: false,
   saveUninitialized: false,
-  //store: MongoStore.create({ mongooseConnection: mongoose.connection })
+  //store: MongoStore.create({ mongooseConnection: mongoose.connection }) // store session information into db
 }));
 
 //------------------------------------------------------------------PASSPORT SETTINGS
 
-const passport = require('./passport/setupLocal');
+const passport = require('passport');
 
 app.use(passport.initialize());
 app.use(passport.session());

@@ -1,15 +1,15 @@
 const chalk = require('chalk')
 const { User } = require('../database/models/User');
-const FacebookStrategy = require("passport-facebook").Strategy;
-const { facebook } = require('./thirdParty_setup')
+var TwitterStrategy = require('passport-twitter').Strategy;
+const { twitter } = require('./thirdParty_setup')
 const init = require('./init');
 const passport = require('passport');
 
-passport.use(new FacebookStrategy({
-    
-    clientID: facebook.clientID,
-    clientSecret: facebook.clientSecret,
-    callbackURL: facebook.callbackURL
+passport.use(new TwitterStrategy({
+
+    consumerKey: twitter.consumerKey,
+    consumerSecret: twitter.consumerSecret,
+    callbackURL: twitter.callbackURL
     
 }, async function(accessToken, refreshToken, profile, done) {
     
