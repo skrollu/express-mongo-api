@@ -14,7 +14,7 @@ if(process.env.NODE_ENV === 'development') {
 }
 
 const connectDb = () => {
-  return mongoose.connect(DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true }, err => {
+  return mongoose.connect(DATABASE_URL, { useUnifiedTopology: true, useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }, err => {
     if (err) {
       console.log("Connection to Database failed. \n" + err);
     }

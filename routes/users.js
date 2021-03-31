@@ -12,6 +12,14 @@ const passportLocal = require('../passport/setupLocal')
 const passportFacebook = require('../passport/setupFacebook');
 const passportTwitter = require('../passport/setupTwitter')
 
+router.get('/', function(req, res, next) {
+  res.render('index', { title: 'Express' });
+});
+
+router.get('/login', function(req, res, next) {
+  res.send('Go back and register!');
+});
+
 /**
 * @Route /api/users/register_login/
 * @Access PUBLIC
@@ -228,34 +236,45 @@ router.get("/logout", isAuthenticated, function (req, res) {
 /**
 * ***************************************** THIRD PARTY AUTHENTICATION ***********************************
 */
+const { facebook }  = require('../passport/thirdParty_setup')
+const test = (req, res, next) => {
+    console.log("facebook: ", facebook)
+    console.log("Facebook client id: " + facebook.clientID)
+    console.log("Facebook app secret: " + facebook.clientSecret)
+    next();
+}
 
+const callback = (req, res, next) => {
+    console.log("CALLBACK !!!!!")
+    next();
+}
 
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at
 //     /auth/facebook/callback see callbackURL in FacebookStrategy
-router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
+router.get('/auth/facebook', test, passportFacebook.authenticate('facebook'));
 
 // Facebook will redirect the user to this URL after approval.  Finish the
 // authentication process by attempting to obtain an access token.  If
 // access was granted, the user will be logged in.  Otherwise,
 // authentication has failed.
-router.get('/auth/facebook/callback',() => {
-    console.log("/auth/facebook/callback");
-    passportFacebook.authenticate('facebook', { failureRedirect: '/login' }), (req, res) => {
-        res.status(200).json({
-            message: "Successfully authenticated by facebook account",
-            user: req.user
-        })
-    } 
-});
+router.get('/auth/facebook/callback', callback,
+    passportFacebook.authenticate('facebook', { failureRedirect: '/login' }),
+    function(req, res) {
+        console.log("Successful authentication");
+        res.json(req.user);
+    }
+);
 
 router.get('/auth/twitter', passportTwitter.authenticate('twitter'));
 
 router.get('/auth/twitter/callback',
-  passportTwitter.authenticate('twitter', { failureRedirect: '/login' }),
+  passportTwitter.authenticate('twitter', { failureRedirect: '/api/users/login' }),
+  
   function(req, res) {
-    // Successful authentication
+    console.log("Successful authentication");
     res.json(req.user);
-  });
+  }
+);
 
 module.exports = router;

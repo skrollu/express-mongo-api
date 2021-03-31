@@ -9,6 +9,9 @@ const cors = require('cors');
 const chalk = require('chalk')// can color the log
 const MongoStore = require('connect-mongo');
 //const mongoose = require('mongoose')
+const Swig = require('swig');
+const path = require('path');
+const bodyParser = require('body-parser')
 
 //------------------------------------------------------------------DATABASE CONNECTION
 
@@ -20,9 +23,9 @@ connectDb();
 const app = express();
 
 app.use(logger('dev'));
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }))
+//app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cookieParser());
 app.use(require('express-session')({
   secret: process.env.EXPRESS_SESSION_SECRET_KEY ? process.env.EXPRESS_SESSION_SECRET_KEY : 'keyboard cat',
@@ -30,6 +33,16 @@ app.use(require('express-session')({
   saveUninitialized: false,
   //store: MongoStore.create({ mongooseConnection: mongoose.connection }) // store session information into db
 }));
+
+// *** view engine *** //
+var swig = new Swig.Swig();
+app.engine('html', swig.renderFile);
+app.set('view engine', 'html');
+
+
+// *** static directory *** //
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, '../client/public')));
 
 //------------------------------------------------------------------PASSPORT SETTINGS
 
