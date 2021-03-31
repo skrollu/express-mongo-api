@@ -4,6 +4,7 @@ const FacebookStrategy = require("passport-facebook").Strategy;
 const { facebook } = require('./thirdParty_setup')
 const init = require('./init');
 const passport = require('passport');
+const { UPDATE_USER_ERROR, CREATE_USER_ERROR } = require('../utils/constants/errors/custom_errors')
 
 passport.use(new FacebookStrategy({
     
@@ -41,21 +42,40 @@ passport.use(new FacebookStrategy({
         upsert: true,
         returnNewDocument: true
     };
+
     console.log("BEFORE FINDoneANDupdate", searchQuery)
     console.log("BEFORE FINDoneANDupdate", updates)
-    
-    User.findOneAndUpdate(searchQuery, updates, options, function(err, user) {
+
+    User.findOne(searchQuery, function(err, user) {
         if(err) {
             return done(err);
+        } else if(user) {
+            User.findOneAndUpdate(searchQuery, updates, (err, updatedUser) => {
+                if(err) {
+                    return done(err);
+                } else if(updatedUser) {
+                    return done(null, updatedUser);
+                } else {
+                    return done(UPDATE_USER_ERROR.message, null);
+                }
+            })
         } else {
-            if(user) {
-                console.log("AFTER FINDoneANDupdate", user)
-                return done(null, user);
-            } else {
-                return done("Error: No user found...", null);
-            }
+            const newUser =  new User({
+                name: updates.name,
+                email: profile.emails[0],
+                third_party_auth: updates.third_party_auth
+            })
+            newUser.save((err, newUser) => {
+                if(err) {
+                    return done(err);
+                } else if (newUser) {
+                    return done(null, newUser);
+                } else {
+                    return done(CREATE_USER_ERROR.message, null);
+                }
+            })
         }
-    });
+    })
 }))
 
 
