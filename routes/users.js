@@ -236,32 +236,19 @@ router.get("/logout", isAuthenticated, function (req, res) {
 /**
 * ***************************************** THIRD PARTY AUTHENTICATION ***********************************
 */
-const { facebook }  = require('../passport/thirdParty_setup')
-const test = (req, res, next) => {
-    console.log("facebook: ", facebook)
-    console.log("Facebook client id: " + facebook.clientID)
-    console.log("Facebook app secret: " + facebook.clientSecret)
-    next();
-}
-
-const callback = (req, res, next) => {
-    console.log("CALLBACK !!!!!")
-    next();
-}
 
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at
 //     /auth/facebook/callback see callbackURL in FacebookStrategy
-router.get('/auth/facebook', test, passportFacebook.authenticate('facebook'));
+router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
 
 // Facebook will redirect the user to this URL after approval.  Finish the
 // authentication process by attempting to obtain an access token.  If
 // access was granted, the user will be logged in.  Otherwise,
 // authentication has failed.
-router.get('/auth/facebook/callback', callback,
+router.get('/auth/facebook/callback',
     passportFacebook.authenticate('facebook', { failureRedirect: '/login' }),
     function(req, res) {
-        console.log("Successful authentication");
         res.json(req.user);
     }
 );
