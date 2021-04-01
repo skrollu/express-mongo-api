@@ -249,6 +249,7 @@ router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
 router.get('/auth/facebook/callback',
     passportFacebook.authenticate('facebook', { failureRedirect: '/login' }),
     function(req, res) {
+        console.log("Successful facebook authentication")
         res.json(req.user);
     }
 );
