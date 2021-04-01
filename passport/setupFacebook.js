@@ -46,6 +46,10 @@ passport.use(new FacebookStrategy({
 
                 //Update modification
                 console.log("Updated user to save: ", user)
+                /**
+                 * Saves this document by inserting a new document into the database if document.isNew is true,
+                 * or sends an updateOne operation only with the modifications to the database, it does not replace the whole document in the latter case.
+                 */
                 user.save((err, updatedUser) => {
                     if(err) {
                         return done(err);
