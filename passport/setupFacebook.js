@@ -13,7 +13,7 @@ passport.use(new FacebookStrategy({
     clientID: facebook.clientID,
     clientSecret: facebook.clientSecret,
     callbackURL: facebook.callbackURL,
-    profileFields: facebook.profileFields
+    profileFields: facebook.profileFields,
     
 }, function(accessToken, refreshToken, profile, done) {
     

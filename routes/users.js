@@ -28,20 +28,20 @@ router.get('/login', function(req, res, next) {
 router.post("/login", (req, res, next) => {
     passportLocal.authenticate("local", function(err, user, info) {
         if (err) {
-            return res.status(400).json({ errors: err });
+            return res.status(400).json({ error: err });
         }
         if (!user) {
             if(!info.email_is_verified) {
-                return res.status(400).json({ errors: info.message });
+                return res.status(400).json({ error: info.message });
             } else {
-                return res.status(400).json({ errors: "No user found" });
+                return res.status(400).json({ error: info.message });
             }
         }
         req.logIn(user, function(err) {
             if (err) {
-                return res.status(400).json({ errors: err });
+                return res.status(400).json({ error: err });
             }
-            return res.status(200).json({ success: `logged in ${user.id} and ${user.name}` });
+            return res.status(200).json({ success: `logged in ${user.id} and ${user.name}`, user });
         });
     })(req, res, next);
 });
@@ -67,6 +67,8 @@ router.post('/register', async function(req, res, next) {
             
             newUser.save()
             .then(user => {
+                console.log("User saved: ", user)
+
                 /**
                 * Users created, a mail is sent.
                 */           
@@ -107,7 +109,7 @@ router.post('/register', async function(req, res, next) {
                     })
                 }
                 
-                main().catch(console.error);
+                //main().catch(console.error);
             })
             .catch(err => {
                 res.status(400).json({

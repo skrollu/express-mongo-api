@@ -82,16 +82,28 @@ const UserSchema = new mongoose.Schema(
 );
 
 // Hash password before saving in database
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', function (next) {
+    var user = this;
     try {
-        if (this.isNew) {
+        // only hash the password if it has been modified (or is new)
+        if (!user.isModified('password')) {
+            return next();
+        } else {
             bcrypt.genSalt(SALT, (err, salt) => {
-                bcrypt.hash(this.password, salt, (err, hashedPassword) => {
-                    this.password = hashedPassword;
+                if(err) {
+                    return next(err);
+                }
+                bcrypt.hash(user.password, salt, (err, hashedPassword) => {
+                    if(err) {
+                        return next(err);
+                    }
+                    user.password = hashedPassword;
+                    console.log('Encrypting password', this.password)
+                    console.log(hashedPassword)
+                    next();
                 });
             });
         }
-        next();
     } catch (error) {
         console.log(error)
         next(error);
