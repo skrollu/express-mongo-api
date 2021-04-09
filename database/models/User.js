@@ -21,6 +21,7 @@ const ThirdPartyProviderSchema = new mongoose.Schema({
         default: null
     }
 });
+
 /**
  *  name: Username
     email: Email address of our user. email has to be unique. No two users can have the same email.
@@ -39,9 +40,9 @@ const UserSchema = new mongoose.Schema(
         },
         email: {
             type: String,
-            required: true,
             unique: true,
             trim: true,
+            //required: true,  not used since twitter need extra permission to access email
             validate: [validateEmail, 'Please fill a valid email address']
             //match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
         },

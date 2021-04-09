@@ -9,13 +9,14 @@ passport.use(new TwitterStrategy({
 
     consumerKey: twitter.consumerKey,
     consumerSecret: twitter.consumerSecret,
-    callbackURL: twitter.callbackURL
+    callbackURL: twitter.callbackURL,
+
     
 }, async function(accessToken, refreshToken, profile, done) {
     
     console.log(chalk.blue(JSON.stringify(profile)));
     
-    User.findOrCreate({ email: profile.emails[0].value }, function(err, user) {
+    User.findOrCreate({ email: profile.email }, function(err, user) {
         
         // if there is an error, stop everything and return that ie an error connecting to the database
         if (err){
@@ -33,7 +34,6 @@ passport.use(new TwitterStrategy({
             // set all of the facebook needed information in our user model
             var newUser = new User({
                 name: profile.name.givenName + ' ' + profile.name.familyName,
-                email: profile.emails[0].value // facebook can return multiple emails so we'll take the first
             });
             
             newUser.third_party_auth.push({

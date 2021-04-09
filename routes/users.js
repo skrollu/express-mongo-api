@@ -11,6 +11,7 @@ const chalk = require('chalk')
 const passportLocal = require('../passport/setupLocal')
 const passportFacebook = require('../passport/setupFacebook');
 const passportTwitter = require('../passport/setupTwitter')
+const passportGoogle = require('../passport/setupGoogle')
 
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
@@ -250,11 +251,19 @@ router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
 // authentication has failed.
 router.get('/auth/facebook/callback',
     passportFacebook.authenticate('facebook', { failureRedirect: '/login' }),
-    function(req, res) {
+    function(req, res, redirectUrl) {
         console.log("Successful facebook authentication")
-        res.json(req.user);
+        console.log(req.headers)
+        res.redirect(redirectUrl, "/#!/");
     }
 );
+
+function test(req, res, next) {
+    console.log("test")
+    console.log(process.env.GOOGLE_CLIENT_ID)
+    console.log(process.env.GOOGLE_CLIENT_SECRET)
+    next()
+}
 
 router.get('/auth/twitter', passportTwitter.authenticate('twitter'));
 
@@ -262,9 +271,22 @@ router.get('/auth/twitter/callback',
   passportTwitter.authenticate('twitter', { failureRedirect: '/api/users/login' }),
   
   function(req, res) {
-    console.log("Successful authentication");
+    console.log("Successful twitter authentication");
     res.json(req.user);
   }
+);
+
+/* GOOGLE ROUTER */
+router.get('/auth/google',
+  passportGoogle.authenticate('google', { scope: ["profile", "email"] }));
+
+router.get('/auth/google/callback',
+  passportGoogle.authenticate('google', { failureRedirect: '/login' }), 
+    function(req, res) {
+        console.log("Successful google authentication")
+        console.log(req.headers)
+        res.json(req.user);
+    }
 );
 
 module.exports = router;
