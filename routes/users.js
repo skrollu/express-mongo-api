@@ -240,10 +240,20 @@ router.get("/logout", isAuthenticated, function (req, res) {
 * ***************************************** THIRD PARTY AUTHENTICATION ***********************************
 */
 
+var refererURL; 
+
+function keepRefererURL(req, res, next) {
+    refererURL = req.headers.referer
+    if(refererURL == null) {
+        console.error("Referer url not found...")
+    }
+    next();
+}
+
 // Redirect the user to Facebook for authentication.  When complete,
 // Facebook will redirect the user back to the application at
 //     /auth/facebook/callback see callbackURL in FacebookStrategy
-router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
+router.get('/auth/facebook', keepRefererURL, passportFacebook.authenticate('facebook', { scope: ['user_friends', 'user_gender']}));
 
 // Facebook will redirect the user to this URL after approval.  Finish the
 // authentication process by attempting to obtain an access token.  If
@@ -251,10 +261,13 @@ router.get('/auth/facebook', passportFacebook.authenticate('facebook'));
 // authentication has failed.
 router.get('/auth/facebook/callback',
     passportFacebook.authenticate('facebook', { failureRedirect: '/login' }),
-    function(req, res, redirectUrl) {
+    function(req, res) {
         console.log("Successful facebook authentication")
         console.log(req.headers)
-        res.redirect(redirectUrl, "/#!/");
+        console.log(req.get('host'))
+        console.log(req.session)
+        console.log(refererURL)
+        res.redirect(refererURL);
     }
 );
 
@@ -283,9 +296,11 @@ router.get('/auth/google',
 router.get('/auth/google/callback',
   passportGoogle.authenticate('google', { failureRedirect: '/login' }), 
     function(req, res) {
-        console.log("Successful google authentication")
         console.log(req.headers)
-        res.json(req.user);
+        console.log(req.get('host'))
+        console.log(req.session)
+        console.log(refererURL)
+        res.redirect(refererURL);
     }
 );
 
